@@ -5,7 +5,13 @@ export default async function Home() {
   const { isAuthenticated } = await auth();
 
   if (isAuthenticated) {
-    redirect("/dashboard");
+    // TODO: Redirect to your authenticated page, e.g., redirect("/dashboard");
+    return (
+      <div>
+        <h1>Welcome!</h1>
+        <p>You are signed in</p>
+      </div>
+    );
   }
 
   return (

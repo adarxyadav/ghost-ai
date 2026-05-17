@@ -1,48 +1,5 @@
 [{
-"resource": "/Users/adarshyadav/Documents/AKAIV/ghost-ai/.agents/skills/clerk-nextjs-patterns/templates/nextjs-basic-auth/app/layout.tsx",
-"owner": "typescript",
-"code": "2724",
-"severity": 8,
-"message": "'\"@clerk/nextjs\"' has no exported member named 'SignedIn'. Did you mean 'SignIn'?",
-"source": "ts",
-"startLineNumber": 3,
-"startColumn": 3,
-"endLineNumber": 3,
-"endColumn": 11,
-"modelVersionId": 3,
-"origin": "extHost1"
-},{
-"resource": "/Users/adarshyadav/Documents/AKAIV/ghost-ai/.agents/skills/clerk-nextjs-patterns/templates/nextjs-basic-auth/app/layout.tsx",
-"owner": "typescript",
-"code": "2305",
-"severity": 8,
-"message": "Module '\"@clerk/nextjs\"' has no exported member 'SignedOut'.",
-"source": "ts",
-"startLineNumber": 4,
-"startColumn": 3,
-"endLineNumber": 4,
-"endColumn": 12,
-"modelVersionId": 3,
-"origin": "extHost1"
-}]
-
-[{
-"resource": "/Users/adarshyadav/Documents/AKAIV/ghost-ai/.agents/skills/clerk-nextjs-patterns/templates/nextjs-basic-auth/app/page.tsx",
-"owner": "typescript",
-"code": "2339",
-"severity": 8,
-"message": "Property 'userId' does not exist on type 'Promise<SessionAuthWithRedirect>'.",
-"source": "ts",
-"startLineNumber": 5,
-"startColumn": 11,
-"endLineNumber": 5,
-"endColumn": 17,
-"modelVersionId": 3,
-"origin": "extHost1"
-}]
-
-[{
-"resource": "/Users/adarshyadav/Documents/AKAIV/ghost-ai/components/editor/project-sidebar.tsx",
+"resource": "components/editor/project-sidebar.tsx",
 "owner": "tailwindcss-intellisense",
 "code": "suggestCanonicalClasses",
 "severity": 4,
@@ -56,7 +13,7 @@
 }]
 
 [{
-"resource": "/Users/adarshyadav/Documents/AKAIV/ghost-ai/components/ui/tabs.tsx",
+"resource": "components/ui/tabs.tsx",
 "owner": "tailwindcss-intellisense",
 "code": "suggestCanonicalClasses",
 "severity": 4,

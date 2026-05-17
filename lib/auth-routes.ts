@@ -14,7 +14,7 @@ function normalizePathFromEnv(value: string | undefined, fallback: string): stri
   try {
     pathname = new URL(value).pathname;
   } catch {
-    pathname = value;
+    pathname = value.split(/[?#]/)[0];
   }
 
   if (!pathname.startsWith("/")) {
@@ -59,7 +59,7 @@ export const SIGN_UP_FORCE_REDIRECT_PATH = normalizePathFromEnv(
 export const PUBLIC_ROUTE_PATTERNS: string[] = [
   HOME_PATH,
   SIGN_IN_PATH,
-  `${SIGN_IN_PATH}(.*)`,
+  ...(SIGN_IN_PATH !== "/" ? [`${SIGN_IN_PATH}(.*)`] : []),
   SIGN_UP_PATH,
-  `${SIGN_UP_PATH}(.*)`,
+  ...(SIGN_UP_PATH !== "/" ? [`${SIGN_UP_PATH}(.*)`] : []),
 ];

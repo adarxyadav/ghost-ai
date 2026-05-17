@@ -22,11 +22,7 @@ hex values.]
 | Primary accent  | `--accent-primary` | `var(--primary)`          |
 | Border          | `--border-default` | `var(--border)`           |
 | Error           | `--state-error`    | `var(--destructive)`      |
-<<<<<<< HEAD
-| Success         | `--success`        | `var(--state-success)`    |
-=======
 | Success         | `--state-success`  | `hsl(142 76% 36%)`        |
->>>>>>> 8fa25cb (implement auth)
 
 The shadcn/ui variables in `app/globals.css` are the source
 of truth for component colors: `--background`, `--foreground`,
@@ -52,7 +48,6 @@ Do not introduce light-mode values.
 ## Component Library
 
 shadcn/ui on top of Tailwind CSS v4. Generated primitives
-<<<<<<< HEAD
 live in `components/ui/`. Add new primitives with the
 shadcn CLI. These generated components are intended to be
 customized by the application—edit them as needed to fit
@@ -60,13 +55,6 @@ project requirements. Warning: re-running the shadcn CLI
 to update a component can overwrite local changes. Use
 source control to track modifications and review the CLI's
 migration guidance when updating existing components.
-=======
-live in `components/ui/` and are intended to be customized by
-the app. Add new primitives with the shadcn CLI, but remember
-that re-running the CLI can overwrite local changes; use source
-control and the CLI migration guidance when updating generated
-components.
->>>>>>> 8fa25cb (implement auth)
 
 ## Layout Patterns
 
