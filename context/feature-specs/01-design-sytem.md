@@ -14,7 +14,7 @@ Add this following shadcn components:
 - Textarea
 - ScrollArea
 
-Do not modify generated ui `components/ui/*` files after installation.
+Generated shadcn/ui primitives in `components/ui/*` are app-owned and may be customized by the app when needed.
 
 Also install `lucide-react`.
 

@@ -26,7 +26,7 @@ export function ProjectSidebar({ isOpen, onClose }: ProjectSidebarProps) {
         "fixed left-3 top-17 z-50 flex h-[calc(100vh-5rem)] w-[min(calc(100vw-1.5rem),20rem)] flex-col rounded-lg border border-border bg-card text-card-foreground shadow-2xl shadow-black/30 transition-transform duration-200 ease-out",
         isOpen
           ? "translate-x-0"
-          : "pointer-events-none -translate-x-[calc(100%+1rem)]"
+          : "pointer-events-none -translate-x-[calc(100%+1rem)]",
       )}
     >
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
