@@ -2,52 +2,135 @@
 
 ## General
 
-- [Principle — e.g. Keep modules small and single-purpose]
-- [Principle — e.g. Fix root causes, do not layer workarounds]
-- [Principle — e.g. Do not mix unrelated concerns in one
-  component or route]
+- **Keep modules small and single-purpose**: Each file should have one clear responsibility.
+  If a module exceeds 300 lines or handles multiple unrelated concerns, split it.
+
+- **Fix root causes, do not layer workarounds**: When encountering a bug or limitation,
+  address the underlying issue rather than adding conditional logic or patches around it.
+  Document the root cause in commit messages.
+
+- **Do not mix unrelated concerns in one component or route**: UI components should not
+  contain business logic or data fetching. API routes should not handle multiple unrelated
+  operations. Separate rendering, state management, and data access into distinct layers.
+
+- **Prefer composition over configuration**: Build features by composing small, focused
+  functions and components rather than large configurable abstractions with many options.
 
 ## TypeScript
 
-- [Rule — e.g. Strict mode is required throughout the project]
-- [Rule — e.g. Avoid any — use explicit interfaces or narrowly
-  scoped types]
-- [Rule — e.g. Validate unknown external input at system
-  boundaries before trusting it]
+- **Strict mode is required**: `tsconfig.json` must have `strict: true`. All type-checking
+  flags (`strictNullChecks`, `noImplicitAny`, etc.) are enabled. Enforced by: `tsc --noEmit`
+  in CI.
 
-## [Framework — e.g. Next.js]
+- **Ban `any` type**: Use explicit interfaces, type unions, or `unknown` for truly dynamic
+  data. If `any` is unavoidable, document why with a comment and use the narrowest scope.
+  Enforced by: ESLint rule `@typescript-eslint/no-explicit-any`.
 
-- [Convention — e.g. Default to server components]
-- [Convention — e.g. Add use client only when browser
-  interactivity requires it]
-- [Convention — e.g. Keep route handlers focused on a
-  single responsibility]
+- **Explicit return types on exported functions**: All exported functions and methods must
+  declare return types. Internal/private functions may infer. Enforced by: ESLint rule
+  `@typescript-eslint/explicit-module-boundary-types`.
+
+- **Validate external input at system boundaries**: API route handlers, form submissions,
+  webhooks, and file uploads must validate input using Zod schemas or similar before any
+  logic runs. Parse once at the boundary, then pass typed data to internal functions.
+  Example:
+  ```typescript
+  const inputSchema = z.object({ name: z.string(), age: z.number() });
+  const parsed = inputSchema.parse(req.body); // throws if invalid
+  ```
+
+- **Prefer `unknown` over `any` for dynamic data**: When receiving data from external sources
+  (API responses, user input), type it as `unknown` and narrow with type guards before use.
+
+## Next.js
+
+- **Default to Server Components**: All components in the `app/` directory are server
+  components unless explicitly marked with `"use client"`. Server components reduce
+  JavaScript bundle size and can fetch data directly.
+
+- **Add `"use client"` only when browser interactivity requires it**: Use client components
+  for state management (useState, useReducer), browser APIs (localStorage, window), event
+  handlers, or third-party libraries that require client-side execution. Keep the client
+  boundary as low in the tree as possible.
+
+- **Keep route handlers focused on a single responsibility**: Each API route file should
+  handle one resource or operation. Do not combine unrelated endpoints in the same file.
+  Example: `/api/projects/route.ts` handles project listing and creation, not user auth.
+
+- **Co-locate route handlers with their operations**: Place route logic in `app/api/*/route.ts`.
+  Extract reusable business logic into `lib/` or domain-specific modules, not in route files.
 
 ## Styling
 
-- [Rule — e.g. Use CSS custom property tokens — no
-  hardcoded hex values]
-- [Rule — e.g. Follow the border radius scale defined
-  in ui-context.md]
+- **Use CSS custom property tokens — no hardcoded hex values**: All colors must reference
+  CSS variables defined in `app/globals.css` (e.g., `bg-background`, `text-foreground`,
+  `border-border`). Never use literal hex, rgb, or hsl values in component classes.
+  Enforced by: code review.
+
+- **Follow the border radius scale defined in ui-context.md**: Use Tailwind utilities
+  `rounded-sm` (inline/small UI), `rounded-lg` (cards/panels), `rounded-xl` (modals/overlays).
+  Do not use arbitrary values like `rounded-[12px]` unless specified in the design spec.
+
+- **Tailwind utility classes only**: Do not write custom CSS modules or styled-components.
+  Use Tailwind's utility-first approach. For complex repeated patterns, extract to a
+  reusable component rather than creating a new CSS class.
 
 ## API Routes
 
-- [Rule — e.g. Validate and parse request input before
-  any logic runs]
-- [Rule — e.g. Enforce auth and ownership before any mutation]
-- [Rule — e.g. Return consistent, predictable response shapes]
+- **Validate and parse request input before any logic runs**: Use Zod or similar schema
+  validation at the top of route handlers. Return 400 with error details for invalid input.
+  Example:
+  ```typescript
+  const body = await req.json();
+  const parsed = createProjectSchema.safeParse(body);
+  if (!parsed.success) return Response.json({ error: parsed.error }, { status: 400 });
+  ```
+
+- **Enforce auth and ownership before any mutation**: Check authentication and authorization
+  before any database write or state change. Return 401 for unauthenticated requests, 403
+  for unauthorized access. Verify ownership or collaborator status against the database.
+
+- **Return consistent, predictable response shapes**: All API responses should follow a
+  consistent structure: `{ data: T }` for success, `{ error: string | object }` for errors.
+  Always set appropriate HTTP status codes (200, 201, 400, 401, 403, 404, 500).
+
+- **Handle errors with proper status codes**: 400 (bad input), 401 (not authenticated),
+  403 (authenticated but not authorized), 404 (resource not found), 409 (conflict),
+  500 (server error). Log 500 errors with full context for debugging.
 
 ## Data and Storage
 
-- [Rule — e.g. Metadata belongs in the database]
-- [Rule — e.g. Large generated content belongs in file
-  or blob storage]
-- [Rule — e.g. Do not store large content directly in
-  the database]
+- **Metadata belongs in the database**: User accounts, project metadata (name, owner, timestamps),
+  relationships, access control lists, and all relational data requiring ACID guarantees are
+  stored in the database with proper indexes and foreign keys.
+
+- **Large generated content belongs in file or blob storage**: Any content exceeding 1MB
+  (generated files, exports, media, uploads) goes to blob/file storage. Store a reference
+  (object key, URL) in the database along with size, content-type, and ownership metadata.
+
+- **Do not store large content directly in the database**: Avoid storing base64-encoded images,
+  large JSON blobs, or binary data in database columns. Use blob storage and reference by ID/key.
+
+- **Use transactions for multi-step writes**: When creating or updating records that span
+  multiple tables (e.g., project + initial metadata + access grants), wrap in a database
+  transaction to ensure atomicity.
+
+- **Soft-delete with retention policy**: Do not hard-delete user data immediately. Mark as
+  deleted with a timestamp, retain for 30 days, then permanently remove with a background job.
 
 ## File Organization
 
-- `[folder]/` — [What belongs here]
-- `[folder]/` — [What belongs here]
-- `[folder]/` — [What belongs here]
-- `[folder]/` — [What belongs here]s
+- `app/` — Next.js app router: pages, layouts, API routes, and global styles. Follow Next.js
+  conventions for routing and file naming.
+
+- `components/ui/` — shadcn/ui generated primitives (Button, Dialog, Input, etc.). These are
+  customizable but regenerating can overwrite changes—see `ui-context.md` for guidance.
+
+- `components/editor/` — Editor-specific components (navbar, sidebar, canvas controls) that
+  compose UI primitives into feature-level widgets.
+
+- `lib/` — Shared application utilities, helpers, and cross-cutting concerns. Examples: `cn()`
+  for class merging, API client wrappers, validation schemas, formatting functions.
+
+- `context/` — Product specifications, architecture, UI standards, workflow rules, progress
+  tracking, and feature specs. Update these files when implementation changes design decisions.

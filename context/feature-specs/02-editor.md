@@ -27,8 +27,8 @@ Requirements:
 - shadcn `Tabs`:
   - My project
   - Shared
-- both tabs show empty palceholder state.
-- full-width `New Project`button at the bottom with `Plus` icon
+- both tabs show empty placeholder state.
+- full-width `New Project` button at the bottom with `Plus` icon
 
 ### Dialog pattern
 
@@ -40,10 +40,10 @@ support:
 - description
 - footer action
 
-Do not build actual diologs yet.
+Do not build actual dialogs yet.
 
 ### Check when done
 
-- new components compile without Typescript errors
+- new components compile without TypeScript errors
 - no lint errors
 - dialog pattern is ready to use for future use.
