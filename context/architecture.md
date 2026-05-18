@@ -8,7 +8,7 @@
 | UI        | Tailwind CSS v4 + shadcn/ui | Styling tokens and reusable UI primitives |
 | Icons     | Lucide React                | Stroke icon library for controls |
 | Auth      | Clerk                       | Session provider, auth UI, protected routes, and user menu |
-| Database  | Not implemented             | Explicitly out of scope until a persistence feature spec exists |
+| Database  | Prisma ORM v7 + PostgreSQL  | Schema, migrations, and typed client via Prisma |
 
 ## System Boundaries
 
@@ -20,15 +20,23 @@
   components.
 - `components/editor/` — editor chrome, layout, sidebar, and
   editor-specific composition components.
-- `lib/` — shared application utilities such as `cn()`.
+- `lib/` — shared application utilities such as `cn()` and the `prisma` singleton.
+- `prisma/` — Prisma schema files and migrations.
+- `prisma/models/` — per-model schema files (multi-file schema).
+- `app/generated/prisma/` — auto-generated Prisma client (do not edit).
 - `context/` — product, architecture, UI, standards, workflow,
   progress, and feature specifications.
 
 ## Storage Model
 
-- **Current state**: No database, blob store, or persistent
-  server-side storage is implemented. UI components must not
-  imply saved data unless a feature spec adds persistence.
+- **Current state**: Prisma ORM v7 with PostgreSQL is implemented.
+  `Project` and `ProjectCollaborator` models are live in the
+  database. `lib/prisma.ts` exports a cached singleton that
+  branches on `DATABASE_URL`: `prisma+postgres://` uses Accelerate
+  (`@prisma/extension-accelerate`), all other URLs use
+  `@prisma/adapter-pg` directly. The Prisma client is generated to
+  `app/generated/prisma/` and must not be committed or edited by
+  hand. Run `npx prisma generate` after schema changes.
 - **Future database boundary**: Store only project metadata,
   ownership, collaborator relationships, audit metadata, and
   searchable indexes. Do not store large generated artifacts,
