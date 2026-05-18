@@ -9,11 +9,45 @@ change.
 
 ## Current Goal
 
-- Prisma data models, client singleton, and first migration from
-  `context/feature-specs/05-prisma.md` implemented and verified.
+- Editor home wired to real project API from `context/feature-specs/07-wire-editor-home.md`
+  implemented and verified.
 
 ## Completed
 
+- Wired editor home to real project API (`context/feature-specs/07-wire-editor-home.md`):
+  - Added `types/project.ts` with shared `ProjectRecord` interface (`id`, `name`, `role`).
+  - Added `lib/projects.ts` server helper that fetches owned projects (`ownerId` match) and
+    shared projects (`ProjectCollaborator.collaboratorEmail` match) in one `Promise.all`;
+    returns both as `ProjectRecord[]` arrays with the correct `role`.
+  - Added `hooks/use-project-actions.ts` managing dialog state (create/rename/delete) and
+    real API mutations: POST creates with a client-generated `slug-suffix` room ID and
+    navigates to `/editor/[id]`; PATCH renames and calls `router.refresh()`; DELETE
+    redirects to `/editor` when deleting the active workspace, otherwise refreshes.
+  - Updated `POST /api/projects` to accept an optional client-provided `id` (validated:
+    lowercase alphanumeric + hyphens, 3–100 chars) so project ID and Liveblocks room ID
+    stay aligned.
+  - Updated `app/editor/page.tsx` to be an async server component that calls
+    `getProjectsForCurrentUser()` and passes `ownedProjects`/`sharedProjects` to
+    `EditorShell`.
+  - Updated `EditorShell` to accept real project data props and use `useProjectActions`
+    instead of the old mock-only hook.
+  - Updated `ProjectSidebar` to accept separate `ownedProjects`/`sharedProjects` arrays
+    of `ProjectRecord`; collaborator tab rows have no action buttons.
+  - Updated `ProjectDialogs` to use `ProjectRecord`, rename `slugPreview` to
+    `roomIdPreview`, and wire `onConfirm` handlers; Enter key in create/rename dialogs
+    now submits instead of closing.
+- Added `app/api/projects/route.ts` with `GET` (list owner's projects ordered
+  by `createdAt` desc) and `POST` (create project, defaulting missing/blank
+  name to `"Untitled Project"`); both return `401` for unauthenticated
+  requests.
+- Added `app/api/projects/[projectId]/route.ts` with `PATCH` (rename) and
+  `DELETE`; both enforce `401` for unauthenticated requests and `403` when the
+  Clerk `userId` does not match `ownerId`; `PATCH` validates the request body
+  and returns `422` for missing or blank name; `DELETE` responds `204 No
+  Content` on success; both return `404` when the project is not found.
+- Fixed `lib/prisma.ts` to annotate `prisma` as `PrismaClient` (cast via
+  `unknown`) so the union of Accelerate-extended and adapter-based client types
+  does not cause overload incompatibility errors in TypeScript type checking.
 - Added `prisma/models/project.prisma` with `Project` (ownerId,
   name, optional description, `DRAFT`/`ARCHIVED` status enum,
   canvasJsonPath, timestamps, indexes on ownerId and createdAt)
@@ -111,6 +145,26 @@ change.
 ## In Progress
 
 - None.
+
+## Session Notes (continued)
+
+- Started editor home wiring from `context/feature-specs/07-wire-editor-home.md`
+  on 2026-05-18.
+- `lib/projects.ts` uses `currentUser()` from `@clerk/nextjs/server` to get the
+  user's primary email for the collaborator query; owned projects use `auth()` userId
+  directly.
+- Room ID = `${toSlug(name)}-${6-char random suffix}` generated client-side in
+  `useProjectActions`; passed to POST as `id`; validated server-side with regex.
+- Verification passed: `npm run build` (TypeScript clean, all routes present).
+- Started project API routes implementation from
+  `context/feature-specs/06-project-apis.md` on 2026-05-18.
+- `prisma` singleton in `lib/prisma.ts` was typed as the union of the
+  Accelerate-extended and adapter-based clients; TypeScript could not resolve
+  `findFirst`/`findUnique` overloads across the union members. Fixed by casting
+  to `PrismaClient` via `unknown` with a comment. Runtime behavior is
+  unchanged.
+- Verification passed: `npm run build` (TypeScript clean, all four routes
+  appear in route output).
 
 ## Next Up
 

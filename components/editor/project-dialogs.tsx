@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { MockProject } from "@/hooks/use-project-dialogs";
+import type { ProjectRecord } from "@/types/project";
 
 type BaseDialogProps = {
   open: boolean;
@@ -21,7 +21,8 @@ type BaseDialogProps = {
 type CreateProjectDialogProps = BaseDialogProps & {
   nameValue: string;
   onNameChange: (value: string) => void;
-  slugPreview: string;
+  roomIdPreview: string;
+  onConfirm: () => void;
 };
 
 export function CreateProjectDialog({
@@ -29,8 +30,9 @@ export function CreateProjectDialog({
   onClose,
   nameValue,
   onNameChange,
-  slugPreview,
+  roomIdPreview,
   isLoading,
+  onConfirm,
 }: CreateProjectDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -50,9 +52,12 @@ export function CreateProjectDialog({
             placeholder="My Project"
             value={nameValue}
             onChange={(e) => onNameChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !isLoading) onConfirm();
+            }}
           />
           <p className="min-h-4 text-xs text-muted-foreground">
-            {slugPreview ? `/${slugPreview}` : ""}
+            {roomIdPreview ? `/${roomIdPreview}` : ""}
           </p>
         </div>
         <DialogFooter>
@@ -63,7 +68,10 @@ export function CreateProjectDialog({
           >
             Cancel
           </Button>
-          <Button disabled={!nameValue.trim() || isLoading}>
+          <Button
+            onClick={onConfirm}
+            disabled={isLoading}
+          >
             Create
           </Button>
         </DialogFooter>
@@ -73,9 +81,10 @@ export function CreateProjectDialog({
 }
 
 type RenameProjectDialogProps = BaseDialogProps & {
-  project: MockProject | null;
+  project: ProjectRecord | null;
   nameValue: string;
   onNameChange: (value: string) => void;
+  onConfirm: () => void;
 };
 
 export function RenameProjectDialog({
@@ -85,6 +94,7 @@ export function RenameProjectDialog({
   nameValue,
   onNameChange,
   isLoading,
+  onConfirm,
 }: RenameProjectDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -110,7 +120,7 @@ export function RenameProjectDialog({
             onChange={(e) => onNameChange(e.target.value)}
             autoFocus
             onKeyDown={(e) => {
-              if (e.key === "Enter" && nameValue.trim()) onClose();
+              if (e.key === "Enter" && nameValue.trim() && !isLoading) onConfirm();
             }}
           />
         </div>
@@ -122,7 +132,10 @@ export function RenameProjectDialog({
           >
             Cancel
           </Button>
-          <Button disabled={!nameValue.trim() || isLoading}>
+          <Button
+            onClick={onConfirm}
+            disabled={!nameValue.trim() || isLoading}
+          >
             Rename
           </Button>
         </DialogFooter>
@@ -132,7 +145,8 @@ export function RenameProjectDialog({
 }
 
 type DeleteProjectDialogProps = BaseDialogProps & {
-  project: MockProject | null;
+  project: ProjectRecord | null;
+  onConfirm: () => void;
 };
 
 export function DeleteProjectDialog({
@@ -140,6 +154,7 @@ export function DeleteProjectDialog({
   onClose,
   project,
   isLoading,
+  onConfirm,
 }: DeleteProjectDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -163,7 +178,7 @@ export function DeleteProjectDialog({
           </Button>
           <Button
             variant="destructive"
-            onClick={onClose}
+            onClick={onConfirm}
             disabled={isLoading}
           >
             Delete
