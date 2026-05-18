@@ -9,13 +9,29 @@ change.
 
 ## Current Goal
 
-- Editor home screen and project dialogs from
-  `context/feature-specs/04-project-dialogs.md` implemented
-  and verified; sidebar project items with owned-only actions,
-  mobile backdrop scrim, and Create/Rename/Delete dialogs wired.
+- Prisma data models, client singleton, and first migration from
+  `context/feature-specs/05-prisma.md` implemented and verified.
 
 ## Completed
 
+- Added `prisma/models/project.prisma` with `Project` (ownerId,
+  name, optional description, `DRAFT`/`ARCHIVED` status enum,
+  canvasJsonPath, timestamps, indexes on ownerId and createdAt)
+  and `ProjectCollaborator` (project relation with cascade delete,
+  collaboratorEmail, createdAt, unique constraint on
+  projectId+email, indexes on email and projectId+createdAt).
+- Created `lib/prisma.ts` as a cached `global` singleton;
+  branches on `DATABASE_URL`: `prisma+postgres://` paths use
+  `@prisma/extension-accelerate` with `accelerateUrl`, all other
+  URLs use `@prisma/adapter-pg`.
+- Ran migration `20260518101134_init_projects` and generated
+  the Prisma client to `app/generated/prisma/`.
+- Updated `prisma.config.ts` to also load `.env.local` via
+  `dotenv.config({ path: ".env.local", override: false })` so the
+  Prisma CLI can find `DATABASE_URL` during local development.
+- Installed `@prisma/extension-accelerate` for Accelerate support.
+- Updated `context/architecture.md` storage model to reflect the
+  live database layer.
 - Added `hooks/use-project-dialogs.ts` with a dedicated hook
   managing dialog type state, selected project, name form value,
   live slug preview, and loading state; exports `MOCK_PROJECTS`
@@ -106,6 +122,19 @@ change.
 
 ## Architecture Decisions
 
+- `lib/prisma.ts` exports a single Prisma client cached on
+  `global` in development (hot-reload safe). It branches on
+  `DATABASE_URL` prefix: `prisma+postgres://` uses Accelerate;
+  all other URLs use `@prisma/adapter-pg`. Import it as
+  `import prisma from '@/lib/prisma'` in server components and
+  route handlers.
+- The generated Prisma client lives in `app/generated/prisma/`;
+  it is gitignored and must be regenerated after schema changes
+  with `npx prisma generate`.
+- `prisma/models/` holds per-domain model files; `schema.prisma`
+  holds only the generator and datasource blocks. Prisma v7
+  directory schema mode (`schema: "prisma/"`) recurses into
+  subdirectories to pick up model files.
 - Clerk owns sign-in, sign-up, profile settings, logout, and
   session lifecycle. The app wraps Clerk UI with a minimal auth
   page shell and app token variables without rebuilding Clerk
@@ -127,6 +156,19 @@ change.
 
 ## Session Notes
 
+- Started Prisma implementation from
+  `context/feature-specs/05-prisma.md` on 2026-05-18.
+- Prisma v7 multi-file schema with `schema: "prisma/"` in
+  `prisma.config.ts` recursively picks up `prisma/models/*.prisma`
+  files — confirmed by `prisma validate`.
+- `DATABASE_URL` lives in `.env.local` (not `.env`); updated
+  `prisma.config.ts` to call `dotenv.config({ path: ".env.local",
+  override: false })` so the Prisma CLI resolves it.
+- Accelerate path requires `new PrismaClient({ accelerateUrl: url
+  }).$extends(withAccelerate())`; empty constructor is rejected by
+  Prisma v7 type system.
+- Verification passed: `npx prisma validate`, migration applied,
+  `npx prisma generate`, `npm run build` (TypeScript clean).
 - Started project dialogs implementation from
   `context/feature-specs/04-project-dialogs.md` on 2026-05-18.
 - Verification passed: `npm run lint` (zero errors, one pre-existing
