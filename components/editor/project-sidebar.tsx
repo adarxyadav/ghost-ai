@@ -4,16 +4,17 @@ import { Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { MockProject } from "@/hooks/use-project-dialogs";
+import type { ProjectRecord } from "@/types/project";
 import { cn } from "@/lib/utils";
 
 type ProjectSidebarProps = {
   isOpen: boolean;
   onClose: () => void;
-  projects: MockProject[];
+  ownedProjects: ProjectRecord[];
+  sharedProjects: ProjectRecord[];
   onCreateProject: () => void;
-  onRenameProject: (project: MockProject) => void;
-  onDeleteProject: (project: MockProject) => void;
+  onRenameProject: (project: ProjectRecord) => void;
+  onDeleteProject: (project: ProjectRecord) => void;
 };
 
 function EmptyProjectState() {
@@ -25,17 +26,16 @@ function EmptyProjectState() {
 }
 
 type ProjectItemProps = {
-  project: MockProject;
-  onRename: () => void;
-  onDelete: () => void;
+  project: ProjectRecord;
+  onRename?: () => void;
+  onDelete?: () => void;
 };
 
 function ProjectItem({ project, onRename, onDelete }: ProjectItemProps) {
-  const isOwner = project.role === "owner";
   return (
     <div className="flex items-center justify-between gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50">
       <span className="flex-1 truncate">{project.name}</span>
-      {isOwner && (
+      {onRename && onDelete && (
         <div className="flex shrink-0 items-center gap-0.5">
           <Button
             type="button"
@@ -70,14 +70,12 @@ function ProjectItem({ project, onRename, onDelete }: ProjectItemProps) {
 export function ProjectSidebar({
   isOpen,
   onClose,
-  projects,
+  ownedProjects,
+  sharedProjects,
   onCreateProject,
   onRenameProject,
   onDeleteProject,
 }: ProjectSidebarProps) {
-  const ownedProjects = projects.filter((p) => p.role === "owner");
-  const sharedProjects = projects.filter((p) => p.role === "collaborator");
-
   return (
     <>
       {/* Mobile backdrop scrim */}
@@ -139,12 +137,7 @@ export function ProjectSidebar({
             ) : (
               <div className="flex flex-col gap-0.5">
                 {sharedProjects.map((project) => (
-                  <ProjectItem
-                    key={project.id}
-                    project={project}
-                    onRename={() => onRenameProject(project)}
-                    onDelete={() => onDeleteProject(project)}
-                  />
+                  <ProjectItem key={project.id} project={project} />
                 ))}
               </div>
             )}

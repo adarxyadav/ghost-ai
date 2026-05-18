@@ -11,26 +11,32 @@ import {
   DeleteProjectDialog,
   RenameProjectDialog,
 } from "@/components/editor/project-dialogs";
-import {
-  MOCK_PROJECTS,
-  useProjectDialogs,
-} from "@/hooks/use-project-dialogs";
+import { useProjectActions } from "@/hooks/use-project-actions";
+import type { ProjectRecord } from "@/types/project";
 
-export function EditorShell() {
+type EditorShellProps = {
+  ownedProjects: ProjectRecord[];
+  sharedProjects: ProjectRecord[];
+};
+
+export function EditorShell({ ownedProjects, sharedProjects }: EditorShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const {
     dialogType,
     selectedProject,
     nameValue,
-    slugPreview,
+    roomIdPreview,
     isLoading,
     openCreate,
     openRename,
     openDelete,
     closeDialog,
     setNameValue,
-  } = useProjectDialogs();
+    handleCreate,
+    handleRename,
+    handleDelete,
+  } = useProjectActions();
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -41,7 +47,8 @@ export function EditorShell() {
       <ProjectSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        projects={MOCK_PROJECTS}
+        ownedProjects={ownedProjects}
+        sharedProjects={sharedProjects}
         onCreateProject={openCreate}
         onRenameProject={openRename}
         onDeleteProject={openDelete}
@@ -68,8 +75,9 @@ export function EditorShell() {
         onClose={closeDialog}
         nameValue={nameValue}
         onNameChange={setNameValue}
-        slugPreview={slugPreview}
+        roomIdPreview={roomIdPreview}
         isLoading={isLoading}
+        onConfirm={handleCreate}
       />
       <RenameProjectDialog
         open={dialogType === "rename"}
@@ -78,12 +86,14 @@ export function EditorShell() {
         nameValue={nameValue}
         onNameChange={setNameValue}
         isLoading={isLoading}
+        onConfirm={handleRename}
       />
       <DeleteProjectDialog
         open={dialogType === "delete"}
         onClose={closeDialog}
         project={selectedProject}
         isLoading={isLoading}
+        onConfirm={handleDelete}
       />
     </main>
   );

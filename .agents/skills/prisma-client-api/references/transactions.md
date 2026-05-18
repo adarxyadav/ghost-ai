@@ -56,6 +56,8 @@ await prisma.$transaction(async (tx) => {
 ### Transaction options
 
 ```typescript
+import { Prisma } from '../generated/prisma/client'
+
 await prisma.$transaction(
   async (tx) => {
     // operations
@@ -63,7 +65,7 @@ await prisma.$transaction(
   {
     maxWait: 5000,    // Max wait to acquire lock (ms)
     timeout: 10000,   // Max transaction duration (ms)
-    isolationLevel: 'Serializable'  // Isolation level
+    isolationLevel: Prisma.TransactionIsolationLevel.Serializable
   }
 )
 ```
@@ -72,10 +74,13 @@ await prisma.$transaction(
 
 | Level | Description |
 |-------|-------------|
-| `ReadUncommitted` | Lowest isolation, can read uncommitted changes |
+| `ReadUncommitted` | Lowest isolation; some DBs (e.g., PostgreSQL) treat this as `ReadCommitted` instead of allowing dirty reads |
 | `ReadCommitted` | Only read committed changes |
 | `RepeatableRead` | Consistent reads within transaction |
 | `Serializable` | Highest isolation, serialized execution |
+| `Snapshot` | Snapshot isolation; supported on SQL Server only |
+
+> **Compatibility**: `Snapshot` is only available on SQL Server and will error on PostgreSQL, MySQL, and SQLite. `ReadUncommitted` behavior varies by database — PostgreSQL silently upgrades it to `ReadCommitted`.
 
 ## Nested Writes
 

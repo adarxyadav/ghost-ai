@@ -54,8 +54,17 @@ Import from `@prisma/driver-adapter-utils`:
 
 ```typescript
 import type {
+  AdapterInfo,
+  ArgType,
   ColumnType,
+  ConnectionInfo,
+  ErrorCapturingSqlDriverAdapter,
+  ErrorCapturingSqlMigrationAwareDriverAdapterFactory,
+  ErrorCapturingSqlQueryable,
   IsolationLevel,
+  MappedError,
+  Queryable,
+  Result,
   SqlDriverAdapter,
   SqlMigrationAwareDriverAdapterFactory,
   SqlQuery,
@@ -63,17 +72,40 @@ import type {
   SqlResultSet,
   Transaction,
   TransactionOptions,
-  ArgType,
-  ConnectionInfo,
-  MappedError,
 } from "@prisma/driver-adapter-utils";
 import {
   ColumnTypeEnum,
+  Debug,
   DriverAdapterError,
+  bindAdapter,
+  bindMigrationAwareSqlAdapterFactory,
+  bindSqlAdapterFactory,
 } from "@prisma/driver-adapter-utils";
 ```
 
 ## Interface Definitions
+
+### AdapterInfo (base for all queryable/factory types)
+
+```typescript
+interface AdapterInfo {
+  readonly provider: 'mysql' | 'postgres' | 'sqlite' | 'sqlserver';
+  readonly adapterName: string;
+}
+```
+
+Every `Queryable`, `SqlDriverAdapter`, `Transaction`, and factory interface extends `AdapterInfo`. All adapter implementations must expose both fields.
+
+### Queryable\<Query, Result\> (generic base)
+
+```typescript
+interface Queryable<Query, Result> extends AdapterInfo {
+  queryRaw(params: Query): Promise<Result>;
+  executeRaw(params: Query): Promise<number>;
+}
+```
+
+`SqlQueryable` is `Queryable<SqlQuery, SqlResultSet>`.
 
 ### SqlQuery (input to queryRaw/executeRaw)
 
@@ -155,7 +187,7 @@ interface SqlDriverAdapter extends SqlQueryable {
 ### Transaction
 
 ```typescript
-interface Transaction extends SqlQueryable {
+interface Transaction extends AdapterInfo, SqlQueryable {
   readonly options: TransactionOptions;
   commit(): Promise<void>;
   rollback(): Promise<void>;
@@ -173,6 +205,61 @@ interface SqlMigrationAwareDriverAdapterFactory {
   connect(): Promise<SqlDriverAdapter>;
   connectToShadowDb(): Promise<SqlDriverAdapter>;
 }
+```
+
+### Error-Capturing Wrappers
+
+Prisma wraps adapters in error-capturing variants before use. These types are exported for advanced use cases and testing:
+
+```typescript
+// Wraps SqlQueryable — every method returns Result<T> instead of Promise<T>
+type ErrorCapturingSqlQueryable = ErrorCapturingInterface<SqlQueryable>
+
+// Wraps SqlDriverAdapter
+interface ErrorCapturingSqlDriverAdapter extends ErrorCapturingInterface<SqlDriverAdapter> {}
+
+// Wraps SqlMigrationAwareDriverAdapterFactory
+interface ErrorCapturingSqlMigrationAwareDriverAdapterFactory
+  extends ErrorCapturingInterface<SqlMigrationAwareDriverAdapterFactory> {}
+```
+
+### Result\<T\>
+
+Used by error-capturing wrappers instead of throwing:
+
+```typescript
+type Result<T> = { map<U>(fn: (value: T) => U): Result<U>; flatMap<U>(fn: (value: T) => Result<U>): Result<U>; } & (
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly error: MappedError }
+)
+```
+
+Use `ok(value)` and `err(mappedError)` helpers to construct results.
+
+### Bind Utilities
+
+Prisma uses these to wrap your adapter before passing it to the query engine. You generally do **not** call them yourself, but they are exported for testing and interop:
+
+```typescript
+// Wrap a SqlDriverAdapter in error-capturing variants
+const bindAdapter: (adapter: SqlDriverAdapter) => ErrorCapturingSqlDriverAdapter
+
+// Wrap a factory (connect-only, no shadow DB)
+const bindSqlAdapterFactory: (factory: SqlDriverAdapterFactory) => ErrorCapturingSqlDriverAdapterFactory
+
+// Wrap a migration-aware factory (connect + connectToShadowDb)
+const bindMigrationAwareSqlAdapterFactory: (
+  factory: SqlMigrationAwareDriverAdapterFactory
+) => ErrorCapturingSqlMigrationAwareDriverAdapterFactory
+```
+
+### Debug
+
+Re-exported from `@prisma/debug`. Use for adapter-level debug logging:
+
+```typescript
+const debug = Debug('prisma:adapter:mydb')
+debug('connecting to %s', url)
 ```
 
 ## Implementation Steps
