@@ -9,12 +9,32 @@ change.
 
 ## Current Goal
 
-- Clerk authentication from `context/feature-specs/03-auth.md`
-  implemented and verified; post-auth redirect and known
-  extension hydration warning fixes applied.
+- Editor home screen and project dialogs from
+  `context/feature-specs/04-project-dialogs.md` implemented
+  and verified; sidebar project items with owned-only actions,
+  mobile backdrop scrim, and Create/Rename/Delete dialogs wired.
 
 ## Completed
 
+- Added `hooks/use-project-dialogs.ts` with a dedicated hook
+  managing dialog type state, selected project, name form value,
+  live slug preview, and loading state; exports `MOCK_PROJECTS`
+  with two owned and one collaborator project.
+- Added `components/editor/project-dialogs.tsx` with three
+  controlled dialogs: `CreateProjectDialog` (name input + slug
+  preview), `RenameProjectDialog` (prefilled input, auto-focus,
+  Enter submits, current name in description), and
+  `DeleteProjectDialog` (destructive confirmation, no input).
+- Updated `components/editor/project-sidebar.tsx` to accept
+  project list and dialog callbacks; renders project items with
+  Pencil/Trash2 action buttons for owned projects only;
+  collaborator projects show no actions; adds a mobile-only
+  backdrop scrim that closes the sidebar on tap.
+- Updated `components/editor/editor-shell.tsx` to render the
+  editor home screen (heading, description, New Project button
+  with Plus icon) and wire all four entry points (home button,
+  sidebar create, sidebar rename, sidebar delete) to their
+  respective dialogs via `useProjectDialogs`.
 - Added `components/editor/editor-navbar.tsx` with fixed-height
   dark top chrome, left/center/right sections, and sidebar
   toggle icons that reflect open state.
@@ -107,6 +127,13 @@ change.
 
 ## Session Notes
 
+- Started project dialogs implementation from
+  `context/feature-specs/04-project-dialogs.md` on 2026-05-18.
+- Verification passed: `npm run lint` (zero errors, one pre-existing
+  warning in skills template only) and `npm run build` (TypeScript
+  and compilation clean).
+- In-app browser automation unavailable; visual verification limited
+  to compile/build checks.
 - Started auth implementation from
   `context/feature-specs/03-auth.md` on 2026-05-18.
 - Initial `npm install @clerk/ui` failed inside the sandbox due
