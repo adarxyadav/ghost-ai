@@ -59,22 +59,37 @@ export async function POST(request: Request) {
     // body is optional; missing or non-JSON body uses default name
   }
 
-  const project = await prisma.project.create({
-    data: {
-      ...(customId ? { id: customId } : {}),
-      ownerId: userId,
-      name: name ?? 'Untitled Project',
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      status: true,
-      canvasJsonPath: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  })
+  let project
+  try {
+    project = await prisma.project.create({
+      data: {
+        ...(customId ? { id: customId } : {}),
+        ownerId: userId,
+        name: name ?? 'Untitled Project',
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        status: true,
+        canvasJsonPath: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      'code' in err &&
+      (err as { code: string }).code === 'P2002'
+    ) {
+      return NextResponse.json(
+        { error: { code: 'CONFLICT', message: 'A project with this ID already exists.' } },
+        { status: 409 },
+      )
+    }
+    throw err
+  }
 
   return NextResponse.json({ data: project }, { status: 201 })
 }

@@ -1,18 +1,26 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { MessageSquare, PanelLeftClose, PanelLeftOpen, Share2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 type EditorNavbarProps = {
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
+  projectName?: string;
+  isAiSidebarOpen?: boolean;
+  onToggleAiSidebar?: () => void;
+  onShare?: () => void;
 };
 
 export function EditorNavbar({
   isSidebarOpen,
   onToggleSidebar,
+  projectName,
+  isAiSidebarOpen,
+  onToggleAiSidebar,
+  onShare,
 }: EditorNavbarProps) {
   const SidebarIcon = isSidebarOpen ? PanelLeftClose : PanelLeftOpen;
 
@@ -31,9 +39,36 @@ export function EditorNavbar({
         </Button>
       </div>
 
-      <div className="flex min-w-0 items-center justify-center" />
+      <div className="flex min-w-0 items-center justify-center">
+        {projectName && (
+          <span className="truncate text-sm font-medium">{projectName}</span>
+        )}
+      </div>
 
-      <div className="flex min-w-0 items-center justify-end">
+      <div className="flex min-w-0 items-center justify-end gap-1">
+        {onShare && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onShare}
+          >
+            <Share2 className="size-4" />
+            Share
+          </Button>
+        )}
+        {onToggleAiSidebar && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={isAiSidebarOpen ? "Close AI assistant" : "Open AI assistant"}
+            aria-pressed={isAiSidebarOpen}
+            onClick={onToggleAiSidebar}
+          >
+            <MessageSquare className="size-4" />
+          </Button>
+        )}
         <UserButton />
       </div>
     </header>

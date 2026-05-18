@@ -70,7 +70,7 @@ export function CreateProjectDialog({
           </Button>
           <Button
             onClick={onConfirm}
-            disabled={isLoading}
+            disabled={!nameValue.trim() || isLoading}
           >
             Create
           </Button>

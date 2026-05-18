@@ -9,11 +9,50 @@ change.
 
 ## Current Goal
 
-- Editor home wired to real project API from `context/feature-specs/07-wire-editor-home.md`
-  implemented and verified.
+- Share dialog from `context/feature-specs/09-share-dialog.md` implemented and verified.
 
 ## Completed
 
+- Built share dialog (`context/feature-specs/09-share-dialog.md`):
+  - Added `app/api/projects/[projectId]/collaborators/route.ts` with `GET` (list
+    collaborators, accessible to owner or any collaborator), `POST` (invite by email,
+    owner-only, upsert-safe), and `DELETE` (remove by email in JSON body, owner-only);
+    all three enforce `401`/`403` and validate input; returns `204` on delete.
+  - Clerk enrichment is best-effort: calls `clerkClient().users.getUserList` with the
+    collaborator email list; maps primary email → `{ name, avatarUrl }`; silently falls
+    back to email-only if Clerk call fails.
+  - Added `components/editor/share-dialog.tsx`: fetches collaborators when opened; owners
+    see an invite-by-email input (Enter submits), collaborator list with remove buttons, and
+    a "Copy link" button with temporary "Copied!" feedback; collaborators see the list
+    read-only; avatars use Clerk image URL with `eslint-disable` on `<img>`; Clerk
+    enrichment populates name and avatar when available.
+  - Updated `lib/project-access.ts` `ProjectAccess` type to include `role:
+    "owner" | "collaborator"` and updated `getProjectAccess` to return the role.
+  - Updated `components/editor/workspace-shell.tsx` to accept `isOwner: boolean`,
+    manage `isShareOpen` state, and render `ShareDialog`; `onShare` in `EditorNavbar`
+    now opens the dialog.
+  - Updated `app/editor/[roomId]/page.tsx` to pass `isOwner={project.role === "owner"}`.
+  - Verification passed: `npm run build` (TypeScript clean, collaborators route listed).
+- Built editor workspace shell (`context/feature-specs/08-editor-workspace-shell.md`):
+  - Added `lib/project-access.ts` with `getCurrentIdentity()` (returns `userId` + primary
+    email from Clerk) and `getProjectAccess(projectId, identity)` (checks owner match then
+    collaborator match; returns `{ id, name }` or `null`).
+  - Added `components/editor/access-denied.tsx`: centered layout, `Lock` icon, short message,
+    and a styled `Link` back to `/editor`.
+  - Updated `components/editor/editor-navbar.tsx` to accept optional `projectName` (renders
+    in center column), `onShare`, `isAiSidebarOpen`, and `onToggleAiSidebar`; added Share2
+    and MessageSquare buttons in the right section.
+  - Updated `components/editor/project-sidebar.tsx` to accept optional `activeProjectId`;
+    `ProjectItem` now takes `isActive` and applies `bg-muted/70 font-medium` when active.
+  - Added `components/editor/workspace-shell.tsx`: client shell managing sidebar and AI
+    sidebar open state; renders navbar with project name + share + AI toggle, canvas
+    placeholder, collapsible AI sidebar panel, `ProjectSidebar` with active room highlighted,
+    and all three project dialogs wired to `useProjectActions(project.id)`.
+  - Added `app/editor/[roomId]/page.tsx`: async server component; unauthenticated users are
+    redirected to `/sign-in`; missing or unauthorized projects render `AccessDenied`; fetches
+    project access and sidebar project list in `Promise.all`; renders `WorkspaceShell`.
+  - Verification passed: `npm run build` (TypeScript clean, `/editor/[roomId]` listed as a
+    dynamic server-rendered route).
 - Wired editor home to real project API (`context/feature-specs/07-wire-editor-home.md`):
   - Added `types/project.ts` with shared `ProjectRecord` interface (`id`, `name`, `role`).
   - Added `lib/projects.ts` server helper that fetches owned projects (`ownerId` match) and
@@ -148,6 +187,19 @@ change.
 
 ## Session Notes (continued)
 
+- Started share dialog from `context/feature-specs/09-share-dialog.md` on 2026-05-18.
+- Clerk `getUserList` accepts `emailAddress: string[]` as a filter; result is
+  `{ data: User[] }`. Enrichment is wrapped in try/catch so a Clerk API failure does
+  not break the list endpoint.
+- `DELETE /api/projects/[projectId]/collaborators` takes `{ email }` in the JSON body
+  rather than a path segment to avoid URL-encoding issues with `@` characters.
+- Avatar `<img>` elements use `// eslint-disable-next-line @next/next/no-img-element`
+  because Clerk avatar URLs can originate from arbitrary OAuth CDNs (Google, GitHub, etc.)
+  making a static remote-pattern list impractical.
+- Started workspace shell from `context/feature-specs/08-editor-workspace-shell.md`
+  on 2026-05-18.
+- Button primitive (`@base-ui/react/button`) does not support `asChild`; used
+  `buttonVariants` from `components/ui/button.tsx` directly on a `Link` element instead.
 - Started editor home wiring from `context/feature-specs/07-wire-editor-home.md`
   on 2026-05-18.
 - `lib/projects.ts` uses `currentUser()` from `@clerk/nextjs/server` to get the

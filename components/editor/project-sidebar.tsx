@@ -12,6 +12,7 @@ type ProjectSidebarProps = {
   onClose: () => void;
   ownedProjects: ProjectRecord[];
   sharedProjects: ProjectRecord[];
+  activeProjectId?: string;
   onCreateProject: () => void;
   onRenameProject: (project: ProjectRecord) => void;
   onDeleteProject: (project: ProjectRecord) => void;
@@ -27,13 +28,19 @@ function EmptyProjectState() {
 
 type ProjectItemProps = {
   project: ProjectRecord;
+  isActive?: boolean;
   onRename?: () => void;
   onDelete?: () => void;
 };
 
-function ProjectItem({ project, onRename, onDelete }: ProjectItemProps) {
+function ProjectItem({ project, isActive, onRename, onDelete }: ProjectItemProps) {
   return (
-    <div className="flex items-center justify-between gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50">
+    <div
+      className={cn(
+        "flex items-center justify-between gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50",
+        isActive && "bg-muted/70 font-medium",
+      )}
+    >
       <span className="flex-1 truncate">{project.name}</span>
       {onRename && onDelete && (
         <div className="flex shrink-0 items-center gap-0.5">
@@ -72,6 +79,7 @@ export function ProjectSidebar({
   onClose,
   ownedProjects,
   sharedProjects,
+  activeProjectId,
   onCreateProject,
   onRenameProject,
   onDeleteProject,
@@ -124,6 +132,7 @@ export function ProjectSidebar({
                   <ProjectItem
                     key={project.id}
                     project={project}
+                    isActive={project.id === activeProjectId}
                     onRename={() => onRenameProject(project)}
                     onDelete={() => onDeleteProject(project)}
                   />
@@ -137,7 +146,11 @@ export function ProjectSidebar({
             ) : (
               <div className="flex flex-col gap-0.5">
                 {sharedProjects.map((project) => (
-                  <ProjectItem key={project.id} project={project} />
+                  <ProjectItem
+                    key={project.id}
+                    project={project}
+                    isActive={project.id === activeProjectId}
+                  />
                 ))}
               </div>
             )}

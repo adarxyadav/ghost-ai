@@ -21,7 +21,7 @@ export async function getProjectsForCurrentUser(): Promise<{
     }),
     email
       ? prisma.projectCollaborator.findMany({
-          where: { collaboratorEmail: email },
+          where: { collaboratorEmail: email.toLowerCase() },
           orderBy: { createdAt: "desc" },
           select: { project: { select: { id: true, name: true } } },
         })

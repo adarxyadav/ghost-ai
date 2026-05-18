@@ -4,7 +4,10 @@ import "dotenv/config";
 import { config } from "dotenv";
 import { defineConfig } from "prisma/config";
 
-// Load .env.local so DATABASE_URL is available when running the Prisma CLI locally
+// Load .env.local so DATABASE_URL is available when running the Prisma CLI locally.
+// override: true means .env.local wins over .env when both define the same variable.
+// If you need .env to take precedence (e.g. to share a value with CI), set override: false
+// or remove the duplicate from .env.local.
 config({ path: ".env.local", override: true });
 
 export default defineConfig({

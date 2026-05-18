@@ -3,11 +3,11 @@
     "allow": [
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(npm run *)",
-      "Bash(mkdir -p /Users/adarshyadav/Documents/AKAIV/ghost-ai/app/api/projects/\\\\[projectId\\\\])"
+      "Bash(npm run *)"
     ],
     "additionalDirectories": [
-      "/Users/adarshyadav/Documents/AKAIV/ghost-ai/app/api/projects"
+      "/Users/adarshyadav/Documents/AKAIV/ghost-ai/app/api/projects",
+      "/Users/adarshyadav/Documents/AKAIV/ghost-ai/app/editor"
     ]
   }
 }
