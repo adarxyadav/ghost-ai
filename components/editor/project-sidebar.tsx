@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -37,13 +38,18 @@ function ProjectItem({ project, isActive, onRename, onDelete }: ProjectItemProps
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50",
-        isActive && "bg-muted/70 font-medium",
+        "group flex items-center justify-between gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50",
+        isActive && "border-l-2 border-primary bg-muted/70 pl-1.5 font-medium",
       )}
     >
-      <span className="flex-1 truncate">{project.name}</span>
+      <Link
+        href={`/editor/${project.id}`}
+        className="min-w-0 flex-1 truncate"
+      >
+        {project.name}
+      </Link>
       {onRename && onDelete && (
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           <Button
             type="button"
             variant="ghost"
@@ -106,7 +112,7 @@ export function ProjectSidebar({
         )}
       >
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
-          <h2 className="text-sm font-medium">Project</h2>
+          <h2 className="text-sm font-medium">Projects</h2>
           <Button
             type="button"
             variant="ghost"
@@ -120,7 +126,7 @@ export function ProjectSidebar({
 
         <Tabs defaultValue="my-project" className="min-h-0 flex-1 gap-0 p-4">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="my-project">My project</TabsTrigger>
+            <TabsTrigger value="my-project">My Projects</TabsTrigger>
             <TabsTrigger value="shared">Shared</TabsTrigger>
           </TabsList>
           <TabsContent value="my-project" className="mt-4">

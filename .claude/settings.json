@@ -3,7 +3,12 @@
     "allow": [
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Skill(liveblocks-best-practices)",
+      "Skill(liveblocks-best-practices:*)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const {Liveblocks} = require\\('@liveblocks/node'\\); console.log\\('ok'\\)\")",
+      "Bash(node -e \"const p = require\\('/Users/adarshyadav/Documents/AKAIV/ghost-ai/node_modules/@liveblocks/react-flow/package.json'\\); console.log\\(JSON.stringify\\(p.peerDependencies, null, 2\\)\\)\")"
     ],
     "additionalDirectories": [
       "/Users/adarshyadav/Documents/AKAIV/ghost-ai/app/api/projects",

@@ -9,10 +9,77 @@ change.
 
 ## Current Goal
 
-- Share dialog from `context/feature-specs/09-share-dialog.md` implemented and verified.
+- Shape panel implemented (`context/feature-specs/12-shape-panel.md` 2026-05-19).
 
 ## Completed
 
+- Built shape panel (`context/feature-specs/12-shape-panel.md`):
+  - Expanded `types/canvas.ts` `CanvasShape` to all six shapes: `rectangle`, `diamond`,
+    `circle`, `pill`, `cylinder`, `hexagon`; added `DragPayload` type `{ shape, width, height }`.
+  - Added `components/editor/canvas-node.tsx`: `CanvasNodeComponent` renders every shape as a
+    bordered rectangle (`bg-card`, `border-border`) with the label or shape name centered;
+    includes `Handle` targets at top and bottom for connections.
+  - Added `components/editor/shape-panel.tsx`: pill-shaped floating toolbar with one draggable
+    icon button per shape (Lucide icons: `RectangleHorizontal`, `Diamond`, `Circle`, `Pill`,
+    `Cylinder`, `Hexagon`); `onDragStart` encodes `DragPayload` as JSON under the
+    `"application/ghost-shape"` transfer key; default sizes: rectangle 160×80, diamond 120×120,
+    circle 80×80, pill 160×60, cylinder 100×100, hexagon 120×120.
+  - Updated `components/editor/canvas.tsx`: split into `Canvas` (holds `useLiveblocksFlow` state
+    and wraps with `ReactFlowProvider`) and inner `CanvasFlow` (uses `useReactFlow` for
+    `screenToFlowPosition`); `handleDrop` reads the drag payload, converts screen→flow
+    coordinates, and calls `onNodesChange([{ type: "add", item: newNode }])` to create the node
+    with the dragged shape and default dimensions; `ShapePanel` rendered via React Flow
+    `<Panel position="bottom-center">`; `nodeTypes` wires `"canvasNode"` to
+    `CanvasNodeComponent`; node IDs use `${shape}-${Date.now()}-${counter}`.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Fixed canvas editor UI issues (`context/current-issues.md` 2026-05-19):
+  - AI sidebar converted from flex-row panel (pushed canvas) to `fixed` overlay matching
+    `ProjectSidebar` approach; canvas now always fills full width below the navbar.
+  - Project items in `ProjectSidebar` now wrap in `<Link href="/editor/[id]">` so clicking a
+    project navigates to it.
+  - Sidebar open state persisted in `sessionStorage` (key `sidebar-open`) so it survives
+    `router.push` navigation; restored via `useEffect` on mount to avoid SSR hydration mismatch.
+  - Rename dialog now shows the project's current Room ID (unchanged by rename) below the input.
+  - Visual improvements: sidebar title "Projects", tab "My Projects", action buttons reveal on
+    hover only (`opacity-0 group-hover:opacity-100`), active item gets a left accent border,
+    AI sidebar redesigned as "AI Copilot" with placeholder cards matching desired state,
+    navbar center shows project name + "Workspace" subtitle on two lines.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Built base canvas (`context/feature-specs/11-base-canvas.md`):
+  - Installed `@xyflow/react` and `react-error-boundary`.
+  - Added `types/canvas.ts` with `CanvasNodeData` (label, color, shape), `CanvasNode`
+    (`Node<CanvasNodeData, "canvasNode">`), and `CanvasEdge`
+    (`Edge<Record<string, never>, "canvasEdge">`).
+  - Added `components/editor/canvas.tsx`: calls `useLiveblocksFlow<CanvasNode, CanvasEdge>`
+    with `suspense: true` and empty initial nodes/edges; renders `ReactFlow` with
+    `ConnectionMode.Loose`, `fitView`, dot-pattern `Background`, `MiniMap`, and `Cursors`.
+  - Added `components/editor/canvas-wrapper.tsx`: wraps the canvas in `LiveblocksProvider`
+    (authEndpoint `/api/liveblocks-auth`), `RoomProvider` (room ID from props, initial presence
+    `cursor: null, isThinking: false`), an `ErrorBoundary` with a styled fallback, and a
+    `ClientSideSuspense` loading state.
+  - Updated `components/editor/workspace-shell.tsx` to replace the canvas placeholder with
+    `<CanvasWrapper roomId={project.id} />`.
+  - `Storage` was kept as `{}` in `liveblocks.config.ts` — `useLiveblocksFlow` manages the
+    `"flow"` storage key internally; declaring it in the global type forces `initialStorage`
+    on `RoomProvider` which conflicts with the library's own initialization.
+  - Verification passed: `npm run build` (TypeScript clean, all routes listed).
+- Built Liveblocks setup (`context/feature-specs/10-liveblocks-setup.md`):
+  - Updated `liveblocks.config.ts` to define `Presence` (`cursor: { x: number; y: number } | null`,
+    `isThinking: boolean`) and `UserMeta` (`id`, `name`, `avatar`, `cursorColor`).
+  - Added `lib/liveblocks.ts`: exports `getLiveblocks()` (lazy singleton — defers
+    `new Liveblocks()` construction until first call so the secret-key validation does not fire
+    during Next.js static page collection at build time) and `getUserCursorColor(userId)` (maps a
+    user ID to a consistent color from a 10-color palette via a simple hash).
+  - Installed `@liveblocks/node` (was not yet present in `node_modules`).
+  - Added `app/api/liveblocks-auth/route.ts` (`POST /api/liveblocks-auth`): requires Clerk
+    authentication (`getCurrentIdentity()`); verifies project access with `getProjectAccess()`
+    and returns `403` for unauthorized; calls `liveblocks.getOrCreateRoom(room, { defaultAccesses:
+    ["room:write"] })` to ensure the room exists; attaches user name, avatar, and deterministic
+    cursor color to `identifyUser()`; returns the Liveblocks session token.
+  - Verification passed: `npm run build` (TypeScript clean, `/api/liveblocks-auth` listed as a
+    dynamic route).
 - Built share dialog (`context/feature-specs/09-share-dialog.md`):
   - Added `app/api/projects/[projectId]/collaborators/route.ts` with `GET` (list
     collaborators, accessible to owner or any collaborator), `POST` (invite by email,
@@ -187,6 +254,31 @@ change.
 
 ## Session Notes (continued)
 
+- Started shape panel from `context/feature-specs/12-shape-panel.md` on 2026-05-19.
+- `useReactFlow` must be called inside a `ReactFlowProvider` context, not in the same component
+  that renders `<ReactFlow>` (which only provides context to its children, not its parent).
+  Solved by splitting `Canvas` into an outer component (holds `useLiveblocksFlow` + wraps in
+  `ReactFlowProvider`) and an inner `CanvasFlow` component that calls `useReactFlow`.
+- `onNodesChange([{ type: "add" as const, item: newNode }])` is the standard React Flow
+  `NodeAddChange` API; `useLiveblocksFlow` wraps `onNodesChange` so this syncs to liveblocks
+  storage automatically.
+- Started base canvas from `context/feature-specs/11-base-canvas.md` on 2026-05-19.
+- Declaring `flow: LiveblocksFlow<CanvasNode, CanvasEdge>` in the global `Storage` type makes
+  `RoomProvider` require `initialStorage`, which conflicts with `useLiveblocksFlow`'s own
+  internal storage init. Kept `Storage: {}` and relied on `useLiveblocksFlow<CanvasNode, CanvasEdge>`
+  generics for type safety instead.
+- Verification passed: `npm run build` (TypeScript clean, `/editor/[roomId]` listed as dynamic).
+- Started Liveblocks setup from `context/feature-specs/10-liveblocks-setup.md` on 2026-05-19.
+- `@liveblocks/node` was not in `package.json`; installed as a runtime dependency.
+- `new Liveblocks({ secret })` validates the secret format immediately and throws during Next.js
+  static page collection at build time when `LIVEBLOCKS_SECRET_KEY` is not set. Solved with a
+  lazy singleton getter `getLiveblocks()` in `lib/liveblocks.ts` instead of a module-level
+  constant (same pattern as `lib/prisma.ts` global caching but deferred).
+- `identifyUser` first arg must be a plain `string` userId (not `{ userId }`) unless you also
+  want to pass `groupIds`; object form requires `groupIds: string[]` in the `Identity` type.
+- `defaultAccesses: ["room:write"]` on `getOrCreateRoom` lets any identified user join; access
+  is gated by our own `getProjectAccess` check before the token is issued.
+- Verification passed: `npm run build` (TypeScript clean, `/api/liveblocks-auth` listed).
 - Started share dialog from `context/feature-specs/09-share-dialog.md` on 2026-05-18.
 - Clerk `getUserList` accepts `emailAddress: string[]` as a filter; result is
   `{ data: User[] }`. Enrichment is wrapped in try/catch so a Clerk API failure does
