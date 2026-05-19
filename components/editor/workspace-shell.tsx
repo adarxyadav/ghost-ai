@@ -32,14 +32,14 @@ export function WorkspaceShell({
   isOwner,
 }: WorkspaceShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
-  const [isShareOpen, setIsShareOpen] = useState(false);
 
   useEffect(() => {
     try {
       if (sessionStorage.getItem(SIDEBAR_KEY) === "true") setIsSidebarOpen(true);
     } catch {}
   }, []);
+  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((v) => {

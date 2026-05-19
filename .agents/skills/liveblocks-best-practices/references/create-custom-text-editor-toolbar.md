@@ -208,9 +208,9 @@ use `{ FloatingToolbar }` if you'd like to modify the floating version.
 ```tsx
 import { FloatingToolbar, Toolbar } from "@liveblocks/react-lexical";
 import { Icon } from "@liveblocks/react-ui";
-import { Editor } from "@tiptap/react";
+import type { LexicalEditor } from "lexical";
 
-function CustomToolbar({ editor }: { editor: Editor | null }) {
+function CustomToolbar({ editor }: { editor: LexicalEditor | null }) {
   return (
     <FloatingToolbar editor={editor}>
       <Toolbar.SectionHistory />

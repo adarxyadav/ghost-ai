@@ -92,12 +92,14 @@ export function ShareDialog({
 
   const handleRemove = async (email: string) => {
     try {
-      await fetch(`/api/projects/${projectId}/collaborators`, {
+      const res = await fetch(`/api/projects/${projectId}/collaborators`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      setCollaborators((prev) => prev.filter((c) => c.email !== email));
+      if (res.ok) {
+        setCollaborators((prev) => prev.filter((c) => c.email !== email));
+      }
     } catch {
       // best-effort
     }

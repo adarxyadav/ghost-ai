@@ -9,9 +9,193 @@ change.
 
 ## Current Goal
 
-- Shape panel implemented (`context/feature-specs/12-shape-panel.md` 2026-05-19).
+- Fixed node text rendering and improved selection/palette colors (2026-05-19).
 
 ## Completed
+
+- Fixed node double-click to edit text on all shapes (2026-05-19):
+  - Root cause: `onDoubleClick={startEditing}` was placed on the label `<span>`. When the label is
+    empty the span has zero size and receives no pointer events, making editing unreachable.
+  - Fix: moved `onDoubleClick` to the full-size container div for CSS shapes (`rectangle`, `pill`,
+    `circle`) and to the `absolute inset-0 z-10` text overlay div for SVG shapes (`diamond`,
+    `hexagon`, `cylinder`). Removed `onDoubleClick` from the `<span>` since it's now redundant.
+  - Changed `startEditing` signature to `(e: React.MouseEvent)` and called `e.stopPropagation()`
+    so React Flow does not also handle the double-click event.
+  - Added `style={{ pointerEvents: "none" }}` to the SVG element on SVG shapes so pointer events
+    fall through to the `z-10` text overlay div rather than being intercepted by the SVG.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Fixed node text rendering and improved selection/palette colors (`context/current-issues.md`) (2026-05-19):
+  - `components/editor/canvas-node.tsx`: added `relative z-10` to the label `<span>` so it renders above
+    NodeResizer's absolutely-positioned resize handles; added `z-20` to the editing overlay; added `z-10`
+    to the SVG text overlay div to ensure it sits above the SVG element in the stacking context.
+  - Changed label font from `text-xs` (12 px) to `text-sm` (14 px) + `leading-tight` for clearer, more
+    readable text across all shape variants; matching change applied to the edit-mode textarea.
+  - Changed selection border on CSS shapes (`rectangle`, `pill`, `circle`) from bright `border-primary`
+    (cyan) to `border-white/50` — a neutral white ring that doesn't clash with any shape fill color.
+  - Changed SVG stroke when selected from `var(--primary)` to `rgba(255,255,255,0.5)` for the same
+    neutral white selection indicator on diamond / hexagon / cylinder.
+  - Changed `resizerHandleStyle` to use white background + white border; removed cyan `border-primary`
+    from handles so the NodeResizer handles are clean white squares on all fill colors.
+  - `types/canvas.ts`: raised lightness of all five non-Default palette text colors from 0.68–0.74 to
+    0.86–0.93, and slightly increased chroma (Purple hue shifted to 310, Red text hue to 350 for
+    pink tones); results in clearly legible, vibrant text on every dark fill color.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Fixed missing node labels in canvas (2026-05-19):
+  - Root cause: both `handleShapeSelect` and `handleDrop` in `canvas.tsx` created nodes with
+    `data: { label: "", ... }` — empty string means nothing is ever rendered in the label span.
+  - Fix: changed both creation paths to set `label` to the capitalized shape name
+    (e.g. `"Rectangle"`, `"Diamond"`) so the shape's type appears as the default label.
+    Users can still double-click to rename or clear it.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Fixed SSL mode warning in `lib/prisma.ts` (2026-05-19):
+  - `DATABASE_URL` using `sslmode=require` (or `prefer`/`verify-ca`) triggered a deprecation
+    warning from `pg-connection-string` about upcoming libpq-semantics breaking change.
+  - Added a regex normalization in `createClient()` that rewrites `sslmode=prefer`,
+    `sslmode=require`, and `sslmode=verify-ca` to `sslmode=verify-full` in the connection
+    string before passing it to `PrismaPg`. This preserves current verify-full behavior
+    and silences the warning without touching `.env.local`.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Built canvas ergonomics (`context/feature-specs/17-canvas-ergonomics.md`) (2026-05-19):
+  - Created `components/editor/canvas-control-bar.tsx`: pill-shaped floating bar with zoom
+    (ZoomOut, Fit, ZoomIn) and history (Undo, Redo) button groups separated by a thin divider;
+    disabled buttons dim to 30% opacity; zoom calls `instance.zoomIn/zoomOut({ duration: 200 })`
+    and `fitView({ duration: 300 })`; undo/redo call Liveblocks `undo`/`redo` from `useHistory`.
+  - Created `hooks/useKeyboardShortcuts.ts`: attaches a `keydown` listener on `window`; skips
+    when `e.target` is an `input`, `textarea`, or `contentEditable` element; supports `+`/`=`
+    (zoom in), `-` (zoom out), `Cmd/Ctrl+Z` (undo), `Cmd/Ctrl+Shift+Z` (redo), `Cmd/Ctrl+Y` (redo).
+  - Updated `components/editor/canvas.tsx`: removed `MiniMap`; wired `useHistory`, `useCanUndo`,
+    `useCanRedo` from `@liveblocks/react` inside `CanvasFlow`; added `CanvasControlBar` in a
+    `Panel position="bottom-left"` panel; called `useKeyboardShortcuts` with the React Flow instance.
+  - Both `CanvasControlBar` and `useKeyboardShortcuts` accept a minimal structural interface
+    (`ZoomableInstance`) instead of the full generic `ReactFlowInstance<CanvasNode, CanvasEdge>` to
+    avoid TypeScript assignability errors from the generic constraint mismatch.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Fixed sidebar-open hydration mismatch in `workspace-shell.tsx` (2026-05-19):
+  - Replaced the `useState` lazy initializer (which read `sessionStorage` synchronously during
+    hydration) with `useState(false)` + a single `useEffect` that reads `sessionStorage` after
+    hydration and calls `setIsSidebarOpen(true)` only when the stored value is `"true"`.
+  - Root cause: the lazy initializer ran on the client during React's hydration render and
+    returned `true` (if sessionStorage had `"true"`), while the server always rendered with
+    `false` (sessionStorage unavailable) — producing mismatched `aria-label`/`aria-pressed` on
+    the toggle button and a mismatched DOM tree in `ProjectSidebar` (conditional scrim `<div>`
+    vs `<aside>`).
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Built custom edge behavior (`context/feature-specs/16-edge-behavior.md`) (2026-05-19):
+  - Updated `CanvasEdge` in `types/canvas.ts` to use `CanvasEdgeData { label?: string }` so
+    edge labels can be stored and synced via Liveblocks.
+  - Added `NodeHandles` component in `canvas-node.tsx` rendering four `type="source"` handles
+    (Top, Right, Bottom, Left) with `id` props. Handles styled as small white dots with dark
+    border (`8×8 px, borderRadius 50%`). Visibility driven by `isHovered || !!selected` state
+    with a 0.15s opacity transition; each shape branch's root element wires `onMouseEnter`/
+    `onMouseLeave` to toggle `isHovered`.
+  - Created `components/editor/canvas-edge.tsx`: custom edge renderer using `getSmoothStepPath`
+    (borderRadius 8) for clean right-angle routing; renders a visible `<path>` with
+    `opacity 0.85` active / `0.35` rest and a 20 px invisible hit path for hover detection
+    without increasing visible line thickness. Passes `markerEnd` from React Flow edge props to
+    the visible path for the arrowhead.
+  - Inline edge label editing: double-click on the `EdgeLabelRenderer` div triggers edit mode;
+    `<input>` grows with content via `width: length*8px`; saves on blur, Enter, or Escape via
+    `updateEdgeData(id, { label })`; saved labels render as pill badges
+    (`rounded-full border bg-popover`); active edge with no label shows a faint `label...` hint.
+    `nodrag nopan` and `onMouseDown stopPropagation` on the label container prevent canvas pan
+    and drag during label interaction.
+  - Updated `canvas.tsx`: added `edgeTypes = { canvasEdge: CanvasEdgeComponent }` and
+    `defaultEdgeOptions = { type: "canvasEdge", markerEnd: { type: MarkerType.ArrowClosed } }`;
+    replaced `useLiveblocksFlow` `onConnect` with a `handleConnect` wrapper that creates fully
+    typed `CanvasEdge` objects (including `type: "canvasEdge"` and `data: {}`) via
+    `onEdgesChange([{ type: "add", item: newEdge }])` for proper Liveblocks sync.
+  - `ConnectionMode.Loose` (already set) allows any source handle to connect to any other handle.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Built floating node color toolbar (`context/feature-specs/15-nodes-color-toolbar.md`) (2026-05-19):
+  - Added `NodeColorPair` type and `NODE_COLOR_PALETTE` (6 pairs: Default, Cyan, Green, Amber, Purple, Red)
+    to `types/canvas.ts`; bg colors use dark oklch values keyed to existing theme hues; text colors
+    mirror the app's chart/accent tokens. Added `textColor?: string` to `CanvasNodeData`.
+  - Added `NodeToolbar` (from `@xyflow/react`) inside `CanvasNodeComponent`; shows only when the node
+    is `selected`; positioned `Position.Top` so it floats above the node without overlapping it.
+  - Toolbar renders one circular swatch per palette entry; active swatch is ringed with its paired text
+    color; hovered swatch shows a tight `box-shadow` glow in its text color plus a `scale(1.1)` lift.
+  - `nodrag nopan` classes and `onMouseDown stopPropagation` on the toolbar container and each button
+    prevent toolbar clicks from triggering node drag or canvas pan.
+  - Swatch `onClick` calls `updateNodeData(id, { color: pair.bg, textColor: pair.text })`; this routes
+    through React Flow's `triggerNodeChanges` → `onNodesChange` → `useLiveblocksFlow` so color changes
+    sync to collaborative storage with no server calls.
+  - Applied colors to all six shape variants: CSS shapes (`rectangle`, `pill`, `circle`) receive inline
+    `backgroundColor`/`color` style; SVG shapes (`diamond`, `hexagon`, `cylinder`) use dynamic `fill`
+    prop derived from `data.color`; label overlays on SVG shapes use inline `color` from `data.textColor`.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Built node resizing and inline label editing (`context/feature-specs/14-node-editing.md`) (2026-05-19):
+  - Added `NodeResizer` from `@xyflow/react` to all six shape branches in
+    `components/editor/canvas-node.tsx`; handles appear only when a node is selected
+    (`isVisible={!!selected}`); minimum size enforced at 80×40 px; handle and line
+    styles use `var(--card)` / `var(--primary)` CSS custom properties to match the
+    dark canvas theme at low opacity.
+  - Added inline label editing: double-clicking the label area of any node sets local
+    `isEditing` state; a `<textarea>` overlay (`absolute inset-0`, `nodrag nopan`,
+    `onMouseDown stopPropagation`) replaces the label span so text interactions do not
+    trigger node drag or canvas pan; editing closes on blur or `Escape`; `commitEdit`
+    calls `updateNodeData(id, { label })` from `useReactFlow()` which routes through
+    React Flow's `triggerNodeChanges` → `onNodesChange` → `useLiveblocksFlow` so
+    label changes are synced to collaborative storage automatically.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Applied code-quality and correctness fixes from `context/current-issues.md` (2026-05-19):
+  - `create-custom-text-editor-toolbar.md`: replaced `Editor` from `@tiptap/react` with
+    `LexicalEditor` from `lexical` — the file uses Lexical APIs, not Tiptap.
+  - `create-rooms-manually.md`: added `async` keyword to `fetchRoom` (was missing, causing a
+    syntax error); added `LiveblocksError` to the import from `@liveblocks/node` so the
+    `instanceof` check resolves.
+  - `handling-hook-and-component-errors.md`: wrapped all switch cases that declare `const`
+    bindings in block braces `{}` to eliminate duplicate-declaration scope errors.
+  - `multiple-text-editors.md`: added `import { nanoid } from "nanoid"` so the `nanoid()`
+    call in the mutation example resolves.
+  - `components/editor/canvas.tsx`: replaced `timestamp+counter` node ID scheme with
+    `crypto.randomUUID()` — collision-resistant across concurrent clients; removed the
+    `nodeCounter` module-level variable.
+  - `components/editor/project-sidebar.tsx`: added `focus-within:opacity-100` and
+    `focus-visible:opacity-100` to the action-button wrapper div so keyboard-focused
+    children reveal the Rename/Delete controls.
+  - `components/editor/shape-panel.tsx` + `canvas.tsx`: added `onShapeSelect` prop to
+    `ShapePanel`; buttons now also handle `onClick` and `onKeyDown` (Enter/Space) in
+    addition to drag-and-drop; `CanvasFlow` passes a `handleShapeSelect` callback that
+    uses `screenToFlowPosition(window.innerWidth/2, window.innerHeight/2)` to place the
+    node at the viewport center.
+  - `components/editor/share-dialog.tsx`: `handleRemove` now awaits the `DELETE` fetch and
+    only calls `setCollaborators` when `res.ok` is true — prevents client state from
+    diverging on network or server errors.
+  - `components/editor/workspace-shell.tsx`: replaced `useState(false)` + `useEffect`
+    sidebar-restore pattern with a lazy `useState` initializer that reads `sessionStorage`
+    synchronously on first render; removed the separate `useEffect` and the `useEffect`
+    import.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
+
+- Built node shape rendering and drag preview (`context/feature-specs/13-node-shape.md`):
+  - Replaced placeholder node renderer in `components/editor/canvas-node.tsx`:
+    `rectangle` uses `rounded border`; `pill` and `circle` use `rounded-full border`
+    (all with `bg-card`, `border-border` at rest and `border-primary` when selected).
+    `diamond` and `hexagon` render as SVG `<polygon>` elements; `cylinder` renders as a
+    `<rect>` body with two `<ellipse>` caps (bottom drawn before top for correct z-order).
+    SVG uses `viewBox="0 0 100 100" preserveAspectRatio="none"` so shapes scale with the node's
+    React Flow dimensions. SVG `fill` and `stroke` use CSS custom properties (`var(--card)`,
+    `var(--border)`, `var(--primary)`) so they follow the theme. Labels overlay SVG shapes via
+    `position: absolute inset-0 flex items-center justify-center`.
+  - Added shape drag preview to `components/editor/shape-panel.tsx`:
+    `PreviewState` tracks shape type, default dimensions, and live cursor coordinates.
+    `handleDragStart` suppresses the browser default drag ghost via `setDragImage` with a
+    1×1 transparent GIF and sets preview state. `onDrag` updates cursor position (skips
+    `(0,0)` events emitted by some browsers before `dragend`). `onDragEnd` clears state.
+    `GhostShape` renders the correct shape (CSS div for rectangle/pill/circle; inline SVG for
+    diamond/hexagon/cylinder) using `var(--primary)` stroke so it's visually distinct.
+    Portal to `document.body` positions the ghost fixed at the cursor (centered), `opacity: 0.65`,
+    `pointerEvents: none`, `zIndex: 9999`. No changes to drop or node-creation logic.
+  - Verification passed: `npm run build` (TypeScript clean, all routes present).
 
 - Built shape panel (`context/feature-specs/12-shape-panel.md`):
   - Expanded `types/canvas.ts` `CanvasShape` to all six shapes: `rectangle`, `diamond`,
@@ -254,6 +438,37 @@ change.
 
 ## Session Notes (continued)
 
+- Started node color toolbar from `context/feature-specs/15-nodes-color-toolbar.md` on 2026-05-19.
+- `NodeToolbar` from `@xyflow/react` renders via a portal outside the node's DOM but is positioned
+  relative to it via React Flow context — it reads the current node ID from context, so no `nodeId`
+  prop is required when rendered inside the node component.
+- `box-shadow` in inline styles accepts CSS custom properties (`var(--token)`) and oklch color values;
+  both resolve correctly in modern browsers, so the glow effect works with the palette's string colors.
+- SVG `fill` accepts a string prop; using `data.color ?? "var(--card)"` lets the palette drive SVG
+  shape fill without touching the stroke logic.
+- `nodrag nopan` CSS classes on the toolbar wrapper and buttons prevent React Flow from treating
+  pointer events inside `NodeToolbar` as drag or pan gestures; `onMouseDown stopPropagation` is a
+  belt-and-suspenders guard for the same.
+- Started node editing from `context/feature-specs/14-node-editing.md` on 2026-05-19.
+- `updateNodeData` from `useReactFlow()` dispatches a `NodeDataChange` through
+  `triggerNodeChanges`, which calls the `onNodesChange` prop — `useLiveblocksFlow`
+  wraps this callback so data updates sync to Liveblocks Storage automatically without
+  needing to pass `onNodesChange` into the node component.
+- `nodrag` and `nopan` CSS classes (React Flow v12 conventions) on the textarea wrapper
+  and the textarea itself prevent node drag and canvas pan while the user types.
+- `onMouseDown stopPropagation` on the editing overlay is a belt-and-suspenders guard
+  for browsers that fire pointer events before React Flow checks its drag classes.
+- Started node shape rendering from `context/feature-specs/13-node-shape.md` on 2026-05-19.
+- SVG `fill` and `stroke` accept `var(--token)` in inline props (React passes them through as
+  SVG presentation attributes); CSS custom properties defined on `:root` are resolved at paint time.
+- `preserveAspectRatio="none"` on the SVG makes shapes fill the React Flow node bounding box
+  regardless of aspect ratio — acceptable since default node sizes for SVG shapes are square.
+- Browser drag ghost suppressed via `e.dataTransfer.setDragImage(new Image(), 0, 0)` with a
+  1×1 transparent GIF; a React-managed fixed portal replaces it for the ghost preview.
+- `drag` event (fires on the drag source) reliably carries `clientX/Y` during the drag but emits
+  `(0,0)` on the final tick before `dragend` in some browsers — filtered with a guard.
+- `createPortal` with `document.body` is safe inside `"use client"` components when the portal
+  is only rendered after user interaction (state starts null, never reached during SSR).
 - Started shape panel from `context/feature-specs/12-shape-panel.md` on 2026-05-19.
 - `useReactFlow` must be called inside a `ReactFlowProvider` context, not in the same component
   that renders `<ReactFlow>` (which only provides context to its children, not its parent).

@@ -8,7 +8,13 @@ const createClient = () => {
   if (url.startsWith('prisma+postgres://')) {
     return new PrismaClient({ accelerateUrl: url }).$extends(withAccelerate())
   }
-  const adapter = new PrismaPg({ connectionString: url })
+  // Normalize deprecated SSL modes to verify-full to silence the pg warning
+  // about prefer/require/verify-ca becoming libpq-compatible in pg v9.
+  const normalizedUrl = url.replace(
+    /([?&])sslmode=(prefer|require|verify-ca)(&|$)/g,
+    (_, sep, _mode, end) => `${sep}sslmode=verify-full${end}`,
+  )
+  const adapter = new PrismaPg({ connectionString: normalizedUrl })
   return new PrismaClient({ adapter })
 }
 

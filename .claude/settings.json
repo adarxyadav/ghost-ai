@@ -8,7 +8,9 @@
       "Skill(liveblocks-best-practices:*)",
       "Bash(npm install *)",
       "Bash(node -e \"const {Liveblocks} = require\\('@liveblocks/node'\\); console.log\\('ok'\\)\")",
-      "Bash(node -e \"const p = require\\('/Users/adarshyadav/Documents/AKAIV/ghost-ai/node_modules/@liveblocks/react-flow/package.json'\\); console.log\\(JSON.stringify\\(p.peerDependencies, null, 2\\)\\)\")"
+      "Bash(node -e \"const p = require\\('/Users/adarshyadav/Documents/AKAIV/ghost-ai/node_modules/@liveblocks/react-flow/package.json'\\); console.log\\(JSON.stringify\\(p.peerDependencies, null, 2\\)\\)\")",
+      "Bash(node -e \"const rf = require\\('@xyflow/react'\\); console.log\\(Object.keys\\(rf\\).filter\\(k => k.includes\\('Resiz'\\)\\)\\)\")",
+      "Bash(node -e \"const rf = require\\('@xyflow/react'\\); const store = rf.useReactFlow; console.log\\(typeof store\\)\")"
     ],
     "additionalDirectories": [
       "/Users/adarshyadav/Documents/AKAIV/ghost-ai/app/api/projects",

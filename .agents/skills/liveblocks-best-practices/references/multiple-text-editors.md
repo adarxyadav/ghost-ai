@@ -22,6 +22,7 @@ function TextEditor() {
 In real use, you could store each editor's ID in Liveblocks storage:
 
 ```tsx
+import { nanoid } from "nanoid";
 import { useStorage, useMutation } from "@liveblocks/react/suspense";
 import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
 import { useEditor, EditorContent } from "@tiptap/react";
