@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ type ProjectSidebarProps = {
   onClose: () => void;
   ownedProjects: ProjectRecord[];
   sharedProjects: ProjectRecord[];
+  activeProjectId?: string;
   onCreateProject: () => void;
   onRenameProject: (project: ProjectRecord) => void;
   onDeleteProject: (project: ProjectRecord) => void;
@@ -27,16 +29,27 @@ function EmptyProjectState() {
 
 type ProjectItemProps = {
   project: ProjectRecord;
+  isActive?: boolean;
   onRename?: () => void;
   onDelete?: () => void;
 };
 
-function ProjectItem({ project, onRename, onDelete }: ProjectItemProps) {
+function ProjectItem({ project, isActive, onRename, onDelete }: ProjectItemProps) {
   return (
-    <div className="flex items-center justify-between gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50">
-      <span className="flex-1 truncate">{project.name}</span>
+    <div
+      className={cn(
+        "group flex items-center justify-between gap-1 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50",
+        isActive && "border-l-2 border-primary bg-muted/70 pl-1.5 font-medium",
+      )}
+    >
+      <Link
+        href={`/editor/${project.id}`}
+        className="min-w-0 flex-1 truncate"
+      >
+        {project.name}
+      </Link>
       {onRename && onDelete && (
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           <Button
             type="button"
             variant="ghost"
@@ -72,6 +85,7 @@ export function ProjectSidebar({
   onClose,
   ownedProjects,
   sharedProjects,
+  activeProjectId,
   onCreateProject,
   onRenameProject,
   onDeleteProject,
@@ -98,7 +112,7 @@ export function ProjectSidebar({
         )}
       >
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
-          <h2 className="text-sm font-medium">Project</h2>
+          <h2 className="text-sm font-medium">Projects</h2>
           <Button
             type="button"
             variant="ghost"
@@ -112,7 +126,7 @@ export function ProjectSidebar({
 
         <Tabs defaultValue="my-project" className="min-h-0 flex-1 gap-0 p-4">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="my-project">My project</TabsTrigger>
+            <TabsTrigger value="my-project">My Projects</TabsTrigger>
             <TabsTrigger value="shared">Shared</TabsTrigger>
           </TabsList>
           <TabsContent value="my-project" className="mt-4">
@@ -124,6 +138,7 @@ export function ProjectSidebar({
                   <ProjectItem
                     key={project.id}
                     project={project}
+                    isActive={project.id === activeProjectId}
                     onRename={() => onRenameProject(project)}
                     onDelete={() => onDeleteProject(project)}
                   />
@@ -137,7 +152,11 @@ export function ProjectSidebar({
             ) : (
               <div className="flex flex-col gap-0.5">
                 {sharedProjects.map((project) => (
-                  <ProjectItem key={project.id} project={project} />
+                  <ProjectItem
+                    key={project.id}
+                    project={project}
+                    isActive={project.id === activeProjectId}
+                  />
                 ))}
               </div>
             )}

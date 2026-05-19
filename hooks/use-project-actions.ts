@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { ProjectRecord } from "@/types/project";
@@ -43,10 +43,10 @@ export function useProjectActions(activeProjectId?: string): UseProjectActionsRe
   const [selectedProject, setSelectedProject] = useState<ProjectRecord | null>(null);
   const [nameValue, setNameValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const suffixRef = useRef(randomSuffix());
+  const [suffix, setSuffix] = useState(() => randomSuffix());
 
   const openCreate = useCallback(() => {
-    suffixRef.current = randomSuffix();
+    setSuffix(randomSuffix());
     setNameValue("");
     setDialogType("create");
   }, []);
@@ -70,7 +70,7 @@ export function useProjectActions(activeProjectId?: string): UseProjectActionsRe
   const handleCreate = useCallback(async () => {
     const name = nameValue.trim();
     const slug = toSlug(name);
-    const roomId = slug ? `${slug}-${suffixRef.current}` : suffixRef.current;
+    const roomId = slug ? `${slug}-${suffix}` : suffix;
     setIsLoading(true);
     try {
       const res = await fetch("/api/projects", {
@@ -85,7 +85,7 @@ export function useProjectActions(activeProjectId?: string): UseProjectActionsRe
     } finally {
       setIsLoading(false);
     }
-  }, [nameValue, closeDialog, router]);
+  }, [nameValue, suffix, closeDialog, router]);
 
   const handleRename = useCallback(async () => {
     if (!selectedProject) return;
@@ -126,9 +126,7 @@ export function useProjectActions(activeProjectId?: string): UseProjectActionsRe
   }, [selectedProject, activeProjectId, closeDialog, router]);
 
   const slug = toSlug(nameValue);
-  const roomIdPreview = slug
-    ? `${slug}-${suffixRef.current}`
-    : suffixRef.current;
+  const roomIdPreview = slug ? `${slug}-${suffix}` : suffix;
 
   return {
     dialogType,

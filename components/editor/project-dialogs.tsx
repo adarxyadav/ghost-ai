@@ -70,7 +70,7 @@ export function CreateProjectDialog({
           </Button>
           <Button
             onClick={onConfirm}
-            disabled={isLoading}
+            disabled={!nameValue.trim() || isLoading}
           >
             Create
           </Button>
@@ -123,6 +123,11 @@ export function RenameProjectDialog({
               if (e.key === "Enter" && nameValue.trim() && !isLoading) onConfirm();
             }}
           />
+          {project && (
+            <p className="min-h-4 text-xs text-muted-foreground">
+              Room ID: {project.id}
+            </p>
+          )}
         </div>
         <DialogFooter>
           <Button
